@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>30-Day Challenge Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      font-weight: bold;
+      text-align: center;
+    }
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .nav-buttons button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: lightgray;
+    }
+    .nav-buttons button.active {
+      background-color: #007BFF;
+      color: white;
+    }
+    .challenge-screen {
+      display: none;
+      text-align: center;
+      max-width: 600px;
+    }
+    .active {
+      display: block;
+    }
+    .progress-container {
+      width: 100%;
+      background-color: #ddd;
+      margin: 10px 0;
+      height: 30px;
+      border-radius: 15px;
+    }
+    .progress-bar {
+      height: 100%;
+      background-color: #4caf50;
+      width: 0%;
+      border-radius: 15px;
+      transition: width 0.3s;
+    }
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .day-box {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid #ccc;
+      padding: 5px;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+    .day-title {
+      font-weight: bold;
+      font-size: 14px;
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .day-content {
+      text-align: left;
+      font-size: 12px;
+      width: 100%;
+    }
+    .day-checkbox {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .checked {
+      text-decoration: line-through;
+      color: red;
+    }
+    .subheader {
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .celebration {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      text-align: center;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .celebration img {
+      width: 150px;
+      height: auto;
+    }
+    .speech-bubble {
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      background-color: #f1c40f;
+      padding: 10px;
+      border-radius: 5px;
+      color: #333;
+    }
+    .fireworks {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: #ff6347;
+      border-radius: 50%;
+      animation: explode 1s infinite;
+    }
+    @keyframes explode {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>30 Day Challenge</h1>
+<div class="nav-buttons">
+  <button onclick="showScreen('ab')" id="btn-ab">Ab Challenge</button>
+  <button onclick="showScreen('burpee')" id="btn-burpee">Burpee Challenge</button>
+  <button onclick="showScreen('tricep')" id="btn-tricep">Tricep Challenge</button>
+</div>
+
+<div class="subheader">Progress Completed</div>
+
+<div id="ab" class="challenge-screen active">
+  <div class="progress-container">
+    <div class="progress-bar" id="ab-progress"></div>
+  </div>
+  <div class="day-grid" id="ab-grid"></div>
+</div>
+
+<div id="burpee" class="challenge-screen">
+  <div class="progress-container">
+    <div class="progress-bar" id="burpee-progress"></div>
+  </div>
+  <div class="day-grid" id="burpee-grid"></div>
+</div>
+
+<div id="tricep" class="challenge-screen">
+  <div class="progress-container">
+    <div class="progress-bar" id="tricep-progress"></div>
+  </div>
+  <div class="day-grid" id="tricep-grid"></div>
+</div>
+
+<!-- Celebration Divs for Each Challenge -->
+<div class="celebration" id="ab-celebration">
+  <img src="https://i.imgur.com/ixxOG1E.jpg" alt="Celebration Image">
+  <div class="speech-bubble">CONGRATS DILLON! COLONEL SANDERS IS PROUD OF YOU. NOW CHUCK THAT SHITTY BROCCOLI OUT AND GET SOME CHICKEN IN YA ;)</div>
+</div>
+
+<div class="celebration" id="burpee-celebration">
+  <img src="https://i.imgur.com/NE66gKy.jpg" alt="Celebration Image">
+  <div class="speech-bubble">KEANU REEVES IS IMPRESSED AND SAYS "YOU'RE BREATHTAKING DILLON"</div>
+</div>
+
+<div class="celebration" id="tricep-celebration">
+  <img src="https://i.imgur.com/oVwsXM0.jpg" alt="Celebration Image">
+  <div class="speech-bubble">DAM DILLON YOU'RE MAKING ARNOLD LOOK SMALL! HE NEEDS TO HIT THE GYM MORE BUT DON'T WORRY, HE'LL BE BACK ;)</div>
+</div>
+
+<script>
+  const celebrationTriggered = { ab: false, burpee: false, tricep: false };
+
+  // Save and Load functions for Local Storage
+  function saveProgress(challenge) {
+    const checkboxes = document.querySelectorAll(`#${challenge}-grid .day-checkbox`);
+    const checkedStates = Array.from(checkboxes).map(checkbox => checkbox.checked);
+    localStorage.setItem(`${challenge}-progress`, JSON.stringify(checkedStates));
+  }
+
+  function loadProgress(challenge) {
+    const savedProgress = JSON.parse(localStorage.getItem(`${challenge}-progress`));
+    if (savedProgress) {
+      const checkboxes = document.querySelectorAll(`#${challenge}-grid .day-checkbox`);
+      checkboxes.forEach((checkbox, i) => {
+        checkbox.checked = savedProgress[i];
+        if (checkbox.checked) {
+          checkbox.closest('.day-box').classList.add('checked');
+        }
+      });
+    }
+  }
+
+  function showScreen(challenge) {
+    document.querySelectorAll('.challenge-screen').forEach(screen => screen.classList.remove('active'));
+    document.getElementById(challenge).classList.add('active');
+    document.querySelectorAll('.nav-buttons button').forEach(button => button.classList.remove('active'));
+    document.getElementById(`btn-${challenge}`).classList.add('active');
+    updateProgress(challenge);
+  }
+
+  function createDayBoxes(challenge) {
+    const dayTexts = {
+      ab: [
+        "15 crunches\n6 leg raises\n10 second plank", "20 crunches\n8 leg raises\n15 second plank",
+        "25 crunches\n10 leg raises\n20 second plank", "30 crunches\n12 leg raises\n25 second plank",
+        "35 crunches\n14 leg raises\n30 second plank", "40 crunches\n16 leg raises\n35 second plank",
+        "45 crunches\n18 leg raises\n40 second plank", "50 crunches\n20 leg raises\n45 second plank",
+        "55 crunches\n22 leg raises\n50 second plank", "60 crunches\n24 leg raises\n55 second plank",
+        "65 crunches\n26 leg raises\n60 second plank", "70 crunches\n28 leg raises\n65 second plank",
+        "75 crunches\n30 leg raises\n70 second plank", "80 crunches\n32 leg raises\n75 second plank",
+        "85 crunches\n34 leg raises\n80 second plank", "90 crunches\n36 leg raises\n85 second plank",
+        "95 crunches\n38 leg raises\n90 second plank", "100 crunches\n40 leg raises\n95 second plank",
+        "105 crunches\n42 leg raises\n100 second plank", "110 crunches\n44 leg raises\n105 second plank",
+        "115 crunches\n46 leg raises\n110 second plank", "120 crunches\n48 leg raises\n115 second plank",
+        "125 crunches\n50 leg raises\n120 second plank", "130 crunches\n52 leg raises\n125 second plank",
+        "135 crunches\n54 leg raises\n130 second plank", "140 crunches\n56 leg raises\n135 second plank",
+        "145 crunches\n58 leg raises\n140 second plank", "150 crunches\n60 leg raises\n145 second plank",
+        "155 crunches\n62 leg raises\n150 second plank", "120 crunches\n64 leg raises\n155 second plank"
+      ],
+      burpee: [
+        "10 burpees", "20 burpees", "25 burpees", "30-sec plank\n2 times a day",
+        "25 burpees", "30 burpees", "45 burpees", "30-sec plank\n3 times a day",
+        "45 burpees", "50 burpees", "55 burpees", "30-sec plank\n4 times a day",
+        "55 burpees", "60 burpees", "65 burpees", "45-sec plank\n2 times a day",
+        "65 burpees", "70 burpees", "75 burpees", "45-sec plank\n3 times a day",
+        "75 burpees", "80 burpees", "85 burpees", "45-sec plank\n4 times a day",
+        "85 burpees", "90 burpees", "95 burpees", "60-sec plank\n5 times a day",
+        "95 burpees", "100 burpees"
+      ],
+      tricep: [
+        "1 tricep dip\n3 sets\n30 seconds rest", "20 seconds tricep dip hold",
+        "6 tricep dips\n4 sets\n30 seconds rest", "20 seconds tricep dip hold",
+        "8 tricep dips\n3 sets\n30 seconds rest", "30 seconds tricep dip hold",
+        "8 tricep dips\n4 sets\n30 seconds rest", "30 seconds tricep dip hold",
+        "10 tricep dips\n3 sets\n30 seconds rest", "10 tricep dips\n4 sets\n30 seconds rest",
+        "40 seconds tricep dip hold", "10 tricep dips\n4 sets\n30 seconds rest",
+        "50 seconds tricep dip hold", "50 seconds tricep dip hold",
+        "14 tricep dips\n3 sets\n30 seconds rest", "50 seconds tricep dip hold",
+        "14 tricep dips\n3 sets\n30 seconds rest", "60 seconds tricep dip hold",
+        "14 tricep dips\n4 sets\n30 seconds rest", "60 seconds tricep dip hold",
+        "16 tricep dips\n3 sets\n30 seconds rest", "1 min 10 sec tricep dip hold",
+        "16 tricep dips\n4 sets\n30 seconds rest", "1 min 10 sec tricep dip hold",
+        "18 tricep dips\n3 sets\n30 seconds rest", "1 min 20 sec tricep dip hold",
+        "18 tricep dips\n4 sets\n30 seconds rest", "1 min 20 sec tricep dip hold",
+        "20 tricep dips\n3 sets\n30 seconds rest", "1 min 30 sec tricep dip hold"
+      ]
+    };
+    const grid = document.getElementById(`${challenge}-grid`);
+    grid.innerHTML = ""; 
+
+    for (let i = 0; i < dayTexts[challenge].length; i++) {
+      const box = document.createElement('div');
+      box.className = 'day-box';
+
+      const dayTitle = document.createElement('div');
+      dayTitle.className = 'day-title';
+      dayTitle.innerText = `Day ${i + 1}`;
+
+      const dayContent = document.createElement('div');
+      dayContent.className = 'day-content';
+      dayContent.innerText = dayTexts[challenge][i];
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'day-checkbox';
+
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          box.classList.add('checked');
+        } else {
+          box.classList.remove('checked');
+        }
+        updateProgress(challenge);
+      });
+
+      box.appendChild(dayTitle);
+      box.appendChild(dayContent);
+      box.appendChild(checkbox);
+      grid.appendChild(box);
+    }
+  }
+
+  function updateProgress(challenge) {
+    const checkboxes = document.querySelectorAll(`#${challenge}-grid .day-checkbox`);
+    const completedDays = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const progressBar = document.getElementById(`${challenge}-progress`);
+    const progressPercentage = (completedDays / checkboxes.length) * 100;
+    progressBar.style.width = `${progressPercentage}%`;
+
+    saveProgress(challenge);  // Save progress whenever it's updated
+
+    if (progressPercentage === 100 && !celebrationTriggered[challenge]) {
+      celebrationTriggered[challenge] = true;
+      showCelebration(challenge);
+    }
+  }
+
+  function showCelebration(challenge) {
+    const celebration = document.getElementById(`${challenge}-celebration`);
+    celebration.style.display = 'block';
+
+    for (let i = 0; i < 50; i++) {
+      const firework = document.createElement('div');
+      firework.className = 'fireworks';
+      firework.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+      firework.style.top = `${Math.random() * 100}%`;
+      firework.style.left = `${Math.random() * 100}%`;
+      celebration.appendChild(firework);
+    }
+
+    setTimeout(() => {
+      celebration.style.display = 'none';
+      while (celebration.firstChild) {
+        celebration.removeChild(celebration.firstChild);
+      }
+    }, 15000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    ['ab', 'burpee', 'tricep'].forEach(challenge => {
+      createDayBoxes(challenge);
+      loadProgress(challenge);  // Load saved progress on page load
+    });
+  });
+</script>
+
+</body>
+</html>
